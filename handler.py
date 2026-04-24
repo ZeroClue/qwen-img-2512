@@ -943,6 +943,13 @@ def handler(job):
     job_input = job["input"]
     job_id = job["id"]
 
+    # Health-check probe for RunPod Hub test validation — returns immediately
+    # without touching ComfyUI, so the Hub sees a 200 response.
+    if isinstance(job_input, dict) and job_input.get("health_check"):
+        print("worker-comfyui - Health check probe received, simulating workload...")
+        time.sleep(3)
+        return {"status": "healthy"}
+
     # Make sure that the input is valid
     validated_data, error_message = validate_input(job_input)
     if error_message:
