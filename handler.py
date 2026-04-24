@@ -242,6 +242,7 @@ DEFAULT_WORKFLOW = {
             "on_true": ["238:221", 0],
             "switch": ["238:229", 0]
         },
+        "class_type": "ComfySwitchNode",
         "_meta": {"title": "Switch (model)"}
     },
     "238:240": {
@@ -251,6 +252,7 @@ DEFAULT_WORKFLOW = {
             "on_true": ["238:225", 0],
             "switch": ["238:229", 0]
         },
+        "class_type": "ComfySwitchNode",
         "_meta": {"title": "Switch (steps)"}
     },
     "238:243": {
@@ -260,6 +262,7 @@ DEFAULT_WORKFLOW = {
             "on_true": ["238:218", 0],
             "switch": ["238:229", 0]
         },
+        "class_type": "ComfySwitchNode",
         "_meta": {"title": "Switch (cfg)"}
     }
 }
