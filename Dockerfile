@@ -84,8 +84,8 @@ WORKDIR /comfyui
 COPY scripts/comfy-manager-set-mode.sh /usr/local/bin/comfy-manager-set-mode
 RUN chmod +x /usr/local/bin/comfy-manager-set-mode
 
-COPY src/check-models.sh src/check-models-parallel.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/check-models.sh /usr/local/bin/check-models-parallel.sh
+COPY src/check-models.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/check-models.sh
 
 # Go back to root for handler files
 WORKDIR /
