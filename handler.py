@@ -16,6 +16,12 @@ import traceback
 import copy
 import random
 
+# LoRA filenames for the 2512 model
+LORA_FILES = {
+    "4step": "Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors",
+    "8step": "Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors",
+}
+
 # Time to wait between API check attempts in milliseconds
 COMFY_API_AVAILABLE_INTERVAL_MS = 50
 # Maximum number of API check attempts
@@ -268,6 +274,30 @@ DEFAULT_WORKFLOW = {
 }
 
 
+def _resolve_lora_mode(steps, lora_param=None):
+    """Determine which LoRA to use based on steps and optional lora override.
+
+    Returns: (lora_key, use_lora, auto_cfg)
+        lora_key  - "4step", "8step", or None
+        use_lora  - bool, whether to enable the LoRA path via the switch
+        auto_cfg  - recommended CFG value (1.0 for Lightning, 4.0 for base)
+    """
+    if lora_param is not None:
+        lora_param = lora_param.lower().strip()
+        if lora_param == "none":
+            return None, False, 4.0
+        if lora_param in LORA_FILES:
+            return lora_param, True, 1.0
+        raise ValueError(
+            f"Invalid lora value '{lora_param}'. Must be '4step', '8step', or 'none'."
+        )
+    if steps <= 4:
+        return "4step", True, 1.0
+    if steps <= 8:
+        return "8step", True, 1.0
+    return None, False, 4.0
+
+
 def build_workflow(
     prompt,
     seed=None,
@@ -276,7 +306,15 @@ def build_workflow(
     steps=4,
     negative_prompt="",
     batch_size=1,
+    lora=None,
+    cfg=None,
+    shift=3.1,
+    sampler="euler",
+    scheduler="simple",
 ):
+    lora_key, use_lora, auto_cfg = _resolve_lora_mode(steps, lora)
+    effective_cfg = cfg if cfg is not None else auto_cfg
+
     workflow = copy.deepcopy(DEFAULT_WORKFLOW)
     workflow["238:227"]["inputs"]["text"] = prompt
     workflow["238:228"]["inputs"]["text"] = negative_prompt
@@ -284,8 +322,22 @@ def build_workflow(
     workflow["238:232"]["inputs"]["width"] = width
     workflow["238:232"]["inputs"]["height"] = height
     workflow["238:232"]["inputs"]["batch_size"] = batch_size
-    # Switch: true = 4-step Lightning (CFG=1), false = 50-step full (CFG=4)
-    workflow["238:229"]["inputs"]["value"] = steps <= 4
+
+    # Switch: true = Lightning LoRA, false = base model
+    workflow["238:229"]["inputs"]["value"] = use_lora
+
+    if use_lora and lora_key:
+        workflow["238:221"]["inputs"]["lora_name"] = LORA_FILES[lora_key]
+
+    # Override KSampler inputs directly (bypass switch links)
+    workflow["238:230"]["inputs"]["steps"] = steps
+    workflow["238:230"]["inputs"]["cfg"] = effective_cfg
+    workflow["238:230"]["inputs"]["sampler_name"] = sampler
+    workflow["238:230"]["inputs"]["scheduler"] = scheduler
+
+    # Shift (ModelSamplingAuraFlow)
+    workflow["238:222"]["inputs"]["shift"] = shift
+
     return workflow
 
 
@@ -320,14 +372,47 @@ def validate_input(job_input):
     elif prompt is not None:
         if not isinstance(prompt, str) or not prompt.strip():
             return None, "'prompt' must be a non-empty string"
+
+        # Validate new params
+        _lora_val = job_input.get("lora")
+        if _lora_val is not None:
+            _lora_val = str(_lora_val).lower().strip()
+            if _lora_val not in ("4step", "8step", "none"):
+                return None, "'lora' must be '4step', '8step', or 'none'"
+
+        _steps_val = job_input.get("steps", 4)
+        if not isinstance(_steps_val, int) or _steps_val < 1:
+            return None, "'steps' must be a positive integer"
+
+        _cfg_val = job_input.get("cfg")
+        if _cfg_val is not None and (not isinstance(_cfg_val, (int, float)) or _cfg_val < 0):
+            return None, "'cfg' must be a non-negative number"
+
+        _shift_val = job_input.get("shift")
+        if _shift_val is not None and (not isinstance(_shift_val, (int, float)) or _shift_val <= 0):
+            return None, "'shift' must be a positive number"
+
+        _sampler_val = job_input.get("sampler", "euler")
+        if not isinstance(_sampler_val, str) or not _sampler_val.strip():
+            return None, "'sampler' must be a non-empty string"
+
+        _scheduler_val = job_input.get("scheduler", "simple")
+        if not isinstance(_scheduler_val, str) or not _scheduler_val.strip():
+            return None, "'scheduler' must be a non-empty string"
+
         workflow = build_workflow(
             prompt=prompt,
             seed=job_input.get("seed"),
             width=job_input.get("width", 1328),
             height=job_input.get("height", 1328),
-            steps=job_input.get("steps", 4),
+            steps=_steps_val,
             negative_prompt=job_input.get("negative_prompt", ""),
             batch_size=job_input.get("batch_size", 1),
+            lora=_lora_val,
+            cfg=_cfg_val,
+            shift=_shift_val if _shift_val is not None else 3.1,
+            sampler=_sampler_val,
+            scheduler=_scheduler_val,
         )
     else:
         return None, "Missing 'workflow' or 'prompt' parameter"
@@ -549,6 +634,13 @@ QWEN_MODELS = {
         "relative_path": "loras",
         "filename": "Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors",
         "name": "Qwen Image 2512 Lightning 4-step LoRA",
+        "type": "loras"
+    },
+    "loras/Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors": {
+        "url": "https://huggingface.co/lightx2v/Qwen-Image-2512-Lightning/resolve/main/Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors",
+        "relative_path": "loras",
+        "filename": "Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors",
+        "name": "Qwen Image 2512 Lightning 8-step LoRA",
         "type": "loras"
     }
 }

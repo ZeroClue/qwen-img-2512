@@ -73,6 +73,7 @@ declare -A MODELS=(
     ["clip/qwen_2.5_vl_7b_fp8_scaled.safetensors"]="Comfy-Org/Qwen-Image_ComfyUI|split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors|clip|Qwen CLIP Model"
     ["vae/qwen_image_vae.safetensors"]="Comfy-Org/Qwen-Image_ComfyUI|split_files/vae/qwen_image_vae.safetensors|vae|Qwen VAE Model"
     ["loras/Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors"]="lightx2v/Qwen-Image-2512-Lightning|Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors|loras|Qwen Image 2512 Lightning 4-step LoRA"
+    ["loras/Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors"]="lightx2v/Qwen-Image-2512-Lightning|Qwen-Image-2512-Lightning-8steps-V1.0-fp32.safetensors|loras|Qwen Image 2512 Lightning 8-step LoRA"
 )
 
 main() {

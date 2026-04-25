@@ -2,7 +2,7 @@
 
 # Qwen Image 2512 Generation
 
-🚀 **Ultra-fast AI image generation in just 4 steps** - Generate high-quality 1328×1328 images using the latest Qwen-Image-2512 model with Lightning LoRA optimization.
+🚀 **Ultra-fast AI image generation in 4 or 8 steps** - Generate high-quality 1328×1328 images using the latest Qwen-Image-2512 model with Lightning LoRA optimization.
 
 ## 🎯 **Maximum Resolution: 4K Ultra HD**
 - **4K Quality**: Up to 4096×4096 pixels (17 megapixels)
@@ -11,9 +11,9 @@
 
 ## ⚡ Key Features
 
-- **4-Step Lightning Generation**: 10-12x faster than standard 50-step models
+- **Lightning Generation**: 4-step (fastest) or 8-step (balanced) Lightning LoRA — 6-12x faster than 50-step base model
 - **Latest Model**: Qwen-Image-2512 — newest generation with improved quality
-- **Dual Mode**: 4-step Lightning (fast) or 50-step full quality via `steps` parameter
+- **Triple Mode**: 4-step Lightning (fastest), 8-step Lightning (balanced), or 50-step full quality via `steps` parameter
 - **Cost Efficient**: 80-90% reduction in generation costs vs standard models
 - **Qwen Vision-Language**: Advanced Chinese/English text-to-image with excellent text rendering
 - **Production Ready**: Optimized for RunPod Hub deployment
@@ -23,10 +23,11 @@
 | Metric | Value | Comparison |
 |--------|-------|------------|
 | Generation Time (4-step) | 1-3 seconds | 10-12x faster than standard models |
+| Generation Time (8-step) | 3-5 seconds | 6-8x faster than standard models |
 | Generation Time (50-step) | 10-20 seconds | Full quality mode |
 | Resolution | 1328×1328 pixels (default) | Up to 4096×4096 (4K) supported |
 | Memory Usage | ~16GB GPU | Efficient resource utilization |
-| Steps | 4 (Lightning) / 50 (full) | Switchable via API |
+| Steps | Any positive integer | Auto-selects LoRA: <=4=4-step, 5-8=8-step, >8=base |
 
 ## 🏗️ Architecture
 
@@ -34,11 +35,11 @@
 - **Base Model**: Qwen Image 2512 (diffusion model, fp8)
 - **Text Encoder**: Qwen 2.5 VL 7B (multilingual understanding)
 - **VAE**: Qwen Image VAE (efficient encoding/decoding)
-- **LoRA**: Qwen-Image-2512-Lightning-4steps (speed optimization)
+- **LoRA**: Qwen-Image-Lightning-4steps-V1.0 + Qwen-Image-Lightning-8steps-V1.0 (speed optimization, auto-selected by steps)
 
 ### Pipeline Flow
 ```
-Text Prompt → Qwen 2.5 VL Encoder → Qwen Image 2512 + Lightning LoRA → 4-Step Sampling → VAE Decode → Output Image
+Text Prompt → Qwen 2.5 VL Encoder → Qwen Image 2512 + Lightning LoRA → Sampling (4/8/N steps) → VAE Decode → Output Image
 ```
 
 ## 🚀 Quick Start
@@ -102,9 +103,14 @@ with open("output.png", "wb") as f:
 | `seed` | ❌ | random | Reproducibility seed |
 | `width` | ❌ | 1328 | Image width (up to 4096) |
 | `height` | ❌ | 1328 | Image height (up to 4096) |
-| `steps` | ❌ | 4 | 4=Lightning (fast), >4=full quality (50 steps) |
+| `steps` | ❌ | 4 | Inference steps (any positive int). Auto-selects LoRA: ≤4→4-step, 5-8→8-step, >8→base |
 | `negative_prompt` | ❌ | "" | What to avoid in generation |
 | `batch_size` | ❌ | 1 | Number of images per request |
+| `lora` | ❌ | auto | Override LoRA: `"4step"`, `"8step"`, `"none"`. Auto-detect from steps: ≤4→4-step, 5-8→8-step, >8→base |
+| `cfg` | ❌ | auto | CFG scale (auto: 1.0 for Lightning, 4.0 for base) |
+| `shift` | ❌ | 3.1 | ModelSamplingAuraFlow shift — increase if blurry/dark, decrease for more detail |
+| `sampler` | ❌ | `"euler"` | KSampler sampler name (e.g. `euler`, `res_multistep`) |
+| `scheduler` | ❌ | `"simple"` | KSampler scheduler name |
 
 ### Raw Workflow Mode
 For advanced users, pass a complete ComfyUI API-format workflow:
@@ -128,6 +134,7 @@ payload = {
 | Steps | Time/Gen | Cost/Gen | Monthly (1000 imgs) |
 |-------|----------|----------|---------------------|
 | **4 (Lightning)** | 1-3s | $0.003 | $3.00 |
+| **8 (Lightning)** | 3-5s | $0.006 | $6.00 |
 | **50 (Full)** | 10-20s | $0.015 | $15.00 |
 
 ## 🔧 Configuration
@@ -175,8 +182,8 @@ qwen_img_2512/
 | Feature | Qwen Image (8-step) | Qwen Image 2512 |
 |---------|---------------------|------------------|
 | **Model** | Original Qwen Image | Qwen Image 2512 (newer) |
-| **Lightning Steps** | 8 | 4 (2x faster) |
-| **Full Steps** | N/A | 50 |
+| **Lightning Steps** | 8 | 4 or 8 (flexible) |
+| **Full Steps** | N/A | 50 (or any positive integer) |
 | **Quality** | High | Improved |
 | **Text Rendering** | Good | Better |
 

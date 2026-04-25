@@ -6,6 +6,9 @@
     "height": 1328,
     "steps": 4,
     "negative_prompt": "",
-    "batch_size": 1
+    "batch_size": 1,
+    "shift": 3.1,
+    "sampler": "euler",
+    "scheduler": "simple"
   }
 }
