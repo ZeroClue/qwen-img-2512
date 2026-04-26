@@ -4,6 +4,12 @@
 
 set -euo pipefail
 
+# Download to network volume instead of /tmp (serverless has ~10GB ephemeral storage)
+if mountpoint -q /runpod-volume 2>/dev/null; then
+    export TMPDIR="/runpod-volume/comfyui/models"
+    mkdir -p "$TMPDIR"
+fi
+
 log() {
     local level="$1"
     local message="$2"
