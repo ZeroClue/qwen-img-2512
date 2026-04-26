@@ -3,11 +3,11 @@
 echo "worker-comfyui: Build version ${BUILD_VERSION:-unknown}"
 
 # SYMLINK MODEL DIRS TO NETWORK VOLUME IF PRESENT
-if mountpoint -q /runpod-volume 2>/dev/null; then
-    echo "worker-comfyui: Network volume detected, symlinking model dirs to /runpod-volume"
+if [ -d /runpod-volume ]; then
+    echo "worker-comfyui: Network volume detected, symlinking model dirs to /runpod-volume/models"
     for dir in diffusion_models clip vae loras; do
-        mkdir -p "/runpod-volume/comfyui/models/$dir"
-        ln -sfn "/runpod-volume/comfyui/models/$dir" "/comfyui/models/$dir"
+        mkdir -p "/runpod-volume/models/$dir"
+        ln -sfn "/runpod-volume/models/$dir" "/comfyui/models/$dir"
     done
 else
     echo "worker-comfyui: No network volume detected, using local model storage"

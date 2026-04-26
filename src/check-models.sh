@@ -4,11 +4,16 @@
 
 set -euo pipefail
 
-# Download to network volume instead of /tmp (serverless has ~10GB ephemeral storage)
-if mountpoint -q /runpod-volume 2>/dev/null; then
-    export TMPDIR="/runpod-volume/comfyui/models"
-    mkdir -p "$TMPDIR"
+# Use network volume for models and temp when available
+if [ -d /runpod-volume ]; then
+    MODEL_BASE="/runpod-volume/models"
+    TMPDIR="/runpod-volume/tmp"
+else
+    MODEL_BASE="/comfyui/models"
+    TMPDIR="/tmp"
 fi
+mkdir -p "$MODEL_BASE" "$TMPDIR"
+export TMPDIR
 
 log() {
     local level="$1"
@@ -20,7 +25,7 @@ log() {
 validate_model() {
     local model_path="$1"
     local model_name="$2"
-    local full_path="/comfyui/models/${model_path}"
+    local full_path="${MODEL_BASE}/${model_path}"
 
     if [[ -f "$full_path" ]]; then
         local file_size=$(stat -c%s "$full_path" 2>/dev/null)
@@ -53,7 +58,7 @@ download_model() {
 
         if hf download "$repo_id" "$file_path" --local-dir "$tmp_dir"; then
             local downloaded_file="$tmp_dir/$file_path"
-            local target_dir="/comfyui/models/$relative_path"
+            local target_dir="${MODEL_BASE}/$relative_path"
             mkdir -p "$target_dir"
             mv "$downloaded_file" "$target_dir/"
             rm -rf "$tmp_dir"
